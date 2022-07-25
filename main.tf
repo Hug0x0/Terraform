@@ -1,31 +1,27 @@
 terraform {
-  required_version = ">= 0.12.26"
+  required_version = ">= 0.12.2"
 
   required_providers {
     google = {
       source  = "hashicorp/google"
       version = "~> 3.43.0"
     }
-
      kubernetes = {
       source  = "hashicorp/kubernetes"
       version = ">= 2.0.1"
     }
-
     docker = {
       source  = "kreuzwerker/docker"
-      version = "2.16"
+      version = "~> 2.16"
     }
-
-    # grafana = {
-    #   source  = "grafana/grafana"
-    #   version = "1.24.0"
-    # }
-
+    grafana = {
+      source  = "grafana/grafana"
+      version = "1.24.0"
+    }
   }
 }
 variable "project_id" {
-  description = "replace-357317"
+  description = "replace-{id}"
 }
 
 variable "region" {
@@ -46,6 +42,7 @@ resource "google_compute_subnetwork" "subnet" {
   name          = "${var.project_id}-subnet"
   region        = var.region
   network       = google_compute_network.vpc.name
+  ip_cidr_range = "10.10.0.0/24"
 }
 data "archive_file" "source" {
     type        = "zip"
@@ -75,11 +72,9 @@ resource "google_storage_bucket_object" "zip" {
 resource "google_cloudfunctions_function" "function" {
     name                  = "function-trigger-on-gcs"
     runtime               = "python37"
-
     source_archive_bucket = google_storage_bucket.function_bucket.name
     source_archive_object = google_storage_bucket_object.zip.name
     entry_point           = "hello_gcs"
-    
     event_trigger {
         event_type = "google.storage.object.finalize"
         resource   = "${var.project_id}-input"
